@@ -59,10 +59,12 @@ int checkMouseState(int x, int xRound, int y, int yRound) {
 /*
 *	复合功能组 
 *	现已加入大道磨灭套餐
-*	包括：分割线  
+*	包括：分割线 
 *	author: 闰土 
 */
-
+/* 
+* Base
+*/ 
 // 分割线 
 void printDevideLineWithInfo(string printTitle, int offset) {
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
@@ -75,6 +77,15 @@ void printDevideLineWithInfo(string printTitle, int offset) {
 	}
 	cout << endl;
 }
+/* 
+*	Extended - 类按钮结构操作
+*	include: 基础按钮数据体
+*/ 
+struct buttonLabel{
+	int leftX, leftY, RightX, RightY;
+	bool isPressed;
+	string label;
+};
 
 
 
