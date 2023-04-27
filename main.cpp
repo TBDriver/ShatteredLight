@@ -3,41 +3,41 @@
 #include <iostream>
 #include <string>
 
-// °´¼ü°´ÏÂº¯ÊıÔ¤¶¨Òå 
+// æŒ‰é”®æŒ‰ä¸‹å‡½æ•°é¢„å®šä¹‰ 
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1: 0)
 
-// ÃüÃû¿Õ¼ä
+// å‘½åç©ºé—´
 using namespace std;
 
 
 
 /*
-*	±äÁ¿¶¨Òå×é 
+*	å˜é‡å®šä¹‰ç»„ 
 */
-// Handle³õÊ¼»¯ 
+// Handleåˆå§‹åŒ– 
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
 static HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 static HANDLE inputHandle = GetStdHandle(STD_INPUT_HANDLE);
 
-// ÄãÕâpointÌ«¼ÙÁË
+// ä½ è¿™pointå¤ªå‡äº†
 static POINT pForMouse; 		 // usedIn: checkMouseState 
 static POINT cursourXY = {0, 0}; // usedIn: GLOBAL
 
 
 
 /*
-*	»ù´¡¹¦ÄÜ×é 
-*	°üÀ¨£º¹â±êÒÆ¶¯gotoxy ¼ì²âÊó±ê°´ÏÂ·¶Î§checkMouseState
-*	author: ÈòÍÁ 
+*	åŸºç¡€åŠŸèƒ½ç»„ 
+*	åŒ…æ‹¬ï¼šå…‰æ ‡ç§»åŠ¨gotoxy æ£€æµ‹é¼ æ ‡æŒ‰ä¸‹èŒƒå›´checkMouseState
+*	author: é—°åœŸ 
 */
 
-// ¹â±êÒÆ¶¯
+// å…‰æ ‡ç§»åŠ¨
 void gotoxy(int x, int y) {
 	COORD pos = {x, y};
 	SetConsoleCursorPosition(outputHandle, pos);
 }
 
-// ¼ì²âÊó±ê°´ÏÂ·¶Î§
+// æ£€æµ‹é¼ æ ‡æŒ‰ä¸‹èŒƒå›´
 int checkMouseState(int x, int xRound, int y, int yRound) {
 	int pointX, pointY;
 	CONSOLE_FONT_INFO fontInfo; 
@@ -57,14 +57,15 @@ int checkMouseState(int x, int xRound, int y, int yRound) {
 
 
 /*
-*	¸´ºÏ¹¦ÄÜ×é 
-*	ÏÖÒÑ¼ÓÈë´óµÀÄ¥ÃğÌ×²Í
-*	°üÀ¨£º·Ö¸îÏßprintDevideLineWithInfo
-*		  °´Å¥½á¹¹Ìå 
-*	author: ÈòÍÁ 
+*	å¤åˆåŠŸèƒ½ç»„ 
+*	ç°å·²åŠ å…¥å¤§é“ç£¨ç­å¥—é¤
+*	åŒ…æ‹¬ï¼šåˆ†å‰²çº¿ 
+*	author: é—°åœŸ 
 */
-
-// ·Ö¸îÏß 
+/* 
+* Base
+*/ 
+// åˆ†å‰²çº¿ 
 void printDevideLineWithInfo(string printTitle, int offset) {
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
 	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2 - offset; i++){
@@ -76,30 +77,34 @@ void printDevideLineWithInfo(string printTitle, int offset) {
 	}
 	cout << endl;
 }
+/* 
+*	Extended - ç±»æŒ‰é’®ç»“æ„æ“ä½œ
+*	include: åŸºç¡€æŒ‰é’®æ•°æ®ä½“
+*/ 
+struct buttonLabel{
+	int leftX, leftY, RightX, RightY;
+	bool isPressed;
+	string label;
+};
 
-struct buttonTUI{
-	int leftX;
-	int RightY;
-}; 
 
 
-
-// Ö÷º¯Êı 
+// ä¸»å‡½æ•° 
 int main(int argc, char* argv[]) {
 	SetConsoleTitleA("Shattering...");
-	// »ñÈ¡´°¿Ú´óĞ¡ 90x30 
+	// è·å–çª—å£å¤§å° 90x30 
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
-	// ÉèÖÃ¿ØÖÆÌ¨Ä£Ê½ 
+	// è®¾ç½®æ§åˆ¶å°æ¨¡å¼ 
 	DWORD consoleMode;
 	GetConsoleMode(inputHandle, &consoleMode);
 	consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
 	consoleMode &= ~ENABLE_INSERT_MODE;
 	SetConsoleMode(inputHandle, consoleMode);
 	
-	// ¼ÓÔØ¶¯»­[To do] 
+	// åŠ è½½åŠ¨ç”»[To do] 
 	
 	gotoxy(0, 0);
-	printDevideLineWithInfo("ÕıÔÚ¼ÓÔØ...", 2);
+	printDevideLineWithInfo("æ­£åœ¨åŠ è½½...", 2);
 	gotoxy(0, 1);
 	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++){
 		cout << "| ";
@@ -112,18 +117,18 @@ int main(int argc, char* argv[]) {
 	printDevideLineWithInfo("", 1);
 	
 	gotoxy(0, 0);
-	printDevideLineWithInfo("¼ÓÔØ³É¹¦", 2);
+	printDevideLineWithInfo("åŠ è½½æˆåŠŸ", 2);
 	SetConsoleTitleA("Shattered Light");
 	Sleep(1000);
 	gotoxy(0, 0);
-	printDevideLineWithInfo("Shattered Light - ÆÆËéµÄ¹âÃ¢", 2);
+	printDevideLineWithInfo("Shattered Light - ç ´ç¢çš„å…‰èŠ’", 2);
 	
-	// ÓÎÏ·Ö÷Ñ­»· 
+	// æ¸¸æˆä¸»å¾ªç¯ 
 	while (1) {
 		if (KEY_DOWN(VK_LBUTTON)) {
 			if(checkMouseState(0, 10, 0, 10)) {
 				gotoxy(6, 5);
-				cout << "²¿Êğ";
+				cout << "éƒ¨ç½²";
 			}
 		}
 		Sleep(90);
