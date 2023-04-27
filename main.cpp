@@ -80,10 +80,6 @@ void printDevideLineWithInfo(string printTitle, int offset) {
 struct buttonTUI{
 	int leftX;
 	int RightY;
-	
-	void temp(){
-		printf("intoTemp");
-	}
 }; 
 
 
@@ -121,8 +117,6 @@ int main(int argc, char* argv[]) {
 	Sleep(1000);
 	gotoxy(0, 0);
 	printDevideLineWithInfo("Shattered Light - 破碎的光芒", 2);
-	
-	buttonTUI
 	
 	// 游戏主循环 
 	while (1) {
