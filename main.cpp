@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <Windows.h>
 #include <iostream>
 #include <string>
@@ -115,23 +114,22 @@ int main(int argc, char* argv[]) {
 	consoleMode &= ~ENABLE_INSERT_MODE;
 	SetConsoleMode(inputHandle, consoleMode);
 	
-	// 加载动画[To do] 
-	
+	// 更为细节的加载动画 进度条式[To do] 
 	gotoxy(0, 0);
 	printDevideLineWithInfo("正在加载...", 2);
 	gotoxy(0, 1);
-	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++){
+	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++) {
 		cout << "| ";
-		for (int j = 0; j < (csbi.srWindow.Right - 4); j++){
+		for (int j = 0; j < (csbi.srWindow.Right - 4); j++) {
 			cout << " ";	
 		}
-		cout << " |" << endl;;
+		cout << " |" << endl;
 	}
-	
 	printDevideLineWithInfo("", 1);
-	
 	gotoxy(0, 0);
 	printDevideLineWithInfo("加载成功", 2);
+	
+	// 完成加载 
 	SetConsoleTitleA("Shattered Light");
 	Sleep(1000);
 	gotoxy(0, 0);
