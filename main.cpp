@@ -46,12 +46,8 @@ int checkMouseState(int x, int xRound, int y, int yRound) {
 	GetCurrentConsoleFont(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &fontInfo);
 	pointX = pForMouse.x / fontInfo.dwFontSize.X;
 	pointY = pForMouse.y / fontInfo.dwFontSize.Y;
-	if(((pointX <= x + xRound) and (pointX >= x)) and ((pointY <= y + yRound) and (pointY >= y))){
-		return 1;
-	}
-	else{
-		return 0;
-	}
+	if(((pointX <= x + xRound) and (pointX >= x)) and ((pointY <= y + yRound) and (pointY >= y))){	return 1;	}
+	else{	return 0;	}
 }
 
 
@@ -79,13 +75,31 @@ void printDevideLineWithInfo(string printTitle, int offset) {
 }
 /* 
 *	Extended - 类按钮结构操作
-*	include: 基础按钮数据体
+*	include: 基础按钮数据体 按钮初始化函数 
+*	         按钮文本覆盖式输出 
 */ 
-struct buttonLabel{
-	int leftX, leftY, RightX, RightY;
+struct Button{
+	int leftX[2], leftY[2], rightX[2], rightY[2];
 	bool isPressed;
 	string label;
 };
+Button buttonInit(struct Button &button, int leftXY[2], int rightXY[2], string buttonLabel){
+	button.leftX[0] = leftXY[0];
+	button.leftX[1] = leftXY[1];
+	button.leftY[0] = leftXY[0];
+	button.leftY[1] = rightXY[1];
+	button.rightX[0] = rightXY[0];
+	button.rightX[1] = leftXY[1];
+	button.rightY[0] = rightXY[0];
+	button.rightY[0] = rightXY[1];
+	button.label = buttonLabel;
+	button.isPressed = false;
+	return button;
+}
+void printButtonLabel(struct Button button, string align){
+	gotoxy(button.leftX[0], button.leftX[1]);
+	cout << button.label;
+}
 
 
 
@@ -123,6 +137,11 @@ int main(int argc, char* argv[]) {
 	gotoxy(0, 0);
 	printDevideLineWithInfo("Shattered Light - 破碎的光芒", 2);
 	
+	Button aButton;
+	string tempLabel = "进行部署";
+	int a[] = {1, 1}, b[] = {3, 2};
+	buttonInit(aButton, a, b, tempLabel);
+	printButtonLabel(aButton, "233");
 	// 游戏主循环 
 	while (1) {
 		if (KEY_DOWN(VK_LBUTTON)) {
