@@ -4,6 +4,7 @@
 
 // 按键按下函数预定义
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1: 0)
+// 吐槽一句 大写就别惦记你内驼峰了 
 
 // 命名空间
 using namespace std;
@@ -50,6 +51,10 @@ int checkMouseState(int x, int xRound, int y, int yRound) {
 	} else {
 		return 0;
 	}
+}
+// 求数组长度
+int lenArr(array) {
+	return sizeof(array) / sizeof(array[0]); 
 }
 
 
