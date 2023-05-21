@@ -1,0 +1,6 @@
+test.cpp
+test2.cpp
+.vs/
+.vscode/
+gmon.out
+main.exe

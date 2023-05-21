@@ -1,137 +1,411 @@
-#include <stdio.h>
+/*
+
+	Shattered Light - ÏûÊÅµÄ¹âÃ¢
+	by TBDriver
+	
+	Version 0.1
+
+
+    No BUG ANYTIME pls!
+    
+*/
+
+// ¹¦ÄÜÊµÏÖ
 #include <Windows.h>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <thread>
 
-// æŒ‰é”®æŒ‰ä¸‹å‡½æ•°é¢„å®šä¹‰ 
+// ÎÄ¼ş²Ù×÷
+#include <fstream>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include "json\json.h"
+
+// ²ÊÉ«ÎÄ×Ö
+#define OS_TYPE_WINDOWS_CC
+#include "ColorfulConsole.h"
+
+// °´¼ü°´ÏÂº¯ÊıÔ¤¶¨Òå
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1: 0)
+// ÍÂ²ÛÒ»¾ä ´óĞ´¾Í±ğµë¼ÇÄãÄÚÍÕ·åÁË 
 
-// å‘½åç©ºé—´
+// ÃüÃû¿Õ¼ä
 using namespace std;
-
-
+using std::wcout; // LOVE from ColorfulConsole.h
+using std::endl;
 
 /*
-*	å˜é‡å®šä¹‰ç»„ 
+*	±äÁ¿¶¨Òå×é
 */
-// Handleåˆå§‹åŒ– 
+
+// º¯ÊıÔ¤¶¨Òå
+vector< vector <int> > generateVecs ( initializer_list< int > List);
+
+// Handle³õÊ¼»¯
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
 static HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 static HANDLE inputHandle = GetStdHandle(STD_INPUT_HANDLE);
 
-// ä½ è¿™pointå¤ªå‡äº†
-static POINT pForMouse; 		 // usedIn: checkMouseState 
-static POINT cursourXY = {0, 0}; // usedIn: GLOBAL
+// ÄãÕâpointÌ«¼ÙÁË
+static POINT pForMouse;		 // usedIn: checkMouseState
+static POINT cursourXY = {0, 0};// usedIn: GLOBAL
 
+// ×ÖÌå´óĞ¡È«¾Ö±äÁ¿½¨Á¢ 
+static CONSOLE_FONT_INFO fontInfo;
+// %HOMEPATH%
 
+// ½«ÁìĞÅÏ¢
+/*
+ÕûĞÍÏòÁ¿¾ØÕóopearatorsValue Êı¾İËµÃ÷
+======================================
+0: ½«ÁìÎ¨Ò»Âë  1: ÌåÁ¦  2: ATK ¹¥»÷Á¦  3: DEF ·ÀÓùÁ¦  4: »ú¶¯ĞÔ(ÉÁ±Ü%)  5: Ç£ÖÆÁ¦(×èµ²)  6: ×ÔÖÆÁ¦((1-ÔÙ²¿Êğ%) * 80s)
+
+7: Ö÷±øÖÖ
+1.³µ (½ü+Ô¶,¹¥»÷ËÙ¶ÈÂÔ¿ì)   2.²½ (½ü/Ô¶,¹¥»÷ËÙ¶ÈÖĞµÈ)   3.Æï (½ü,¹¥»÷ËÙ¶ÈÂÔ¿ì,¹¥»÷Á¦½Ï¸ß,·ÀÓùÁ¦ÂÔµÍ)   4.ÖÛ
+8: ±øÖÖ·ÖÖ§
+³µ 1.Õ½³µ(ÏûºÄ¾ü·ÑÂÔ¸ß,·ÀÓùÁ¦ÂÔ¸ß)
+²½ 1.Çá×°²½±ø (»ú¶¯ĞÔÂÔ¸ß(5)) 2.ÖØ×°²½±ø (ÌåÁ¦Óë·ÀÓùÁ¦¸ß,Ç£ÖÆÁ¦¸ß,×ÔÖÆÁ¦ÂÔµÍ,ÏûºÄ¾ü·Ñ¸ß) 3.Ææ±ø(¹¥»÷Á¦¸ß,·ÀÓùÁ¦ÂÔµÍ,×ÔÖÆÁ¦¸ß,Ç£ÖÆÁ¦µÍ,ÏûºÄ¾ü·ÑÂÔµÍ) 4.¹­¼ıÊÖ(¸ßÌ¨,¹¥»÷ËÙ¶ÈÂÔ¿ì,Ç£ÖÆÁ¦µÍ)
+Æï 1.ÆïÊ¿(ÏûºÄ¾ü·ÑÂÔ¸ß,¹¥»÷Á¦ÂÔ¸ß,¹¥»÷ËÙ¶È¿ì)
+ÖÛ 1.ºóÇÚ(»ØÑª) 2.Õ½¹Ä(¼Ó¹¥»÷/ËÙ¶È/·ÀÓù/»ú¶¯ĞÔ)
+
+8: ¿É²¿ÊğÎ»ÖÃ 1.µØÃæ 2.¸ßÌ¨ 3.both  10: ¹¥»÷ËÙ¶È(¼ä¸ô/ms) 11: ÏûºÄ¾ü·Ñ 12: Ï¡ÓĞ¶È
+*/
+static vector< vector<int> > opearatorsValue = generateVecs({1, 1274, 276, 168, 5, 2, 30, 2, 1, 1, 1500, 15, 7, 0, \
+															 2, 1356, 232, 175, 1, 1, 40, 3, 1, 1, 1000, 18, 6, 0});
+/*
+×Ö·û´®ÏòÁ¿¾ØÕóopearatorsFiles Êı¾İËµÃ÷
+======================================
+0: ĞÕ×Ö  1: ×îÖÕËùÊôÊÆÁ¦  2: ĞÔ±ğ  3: ÖÖ×å
+======================================
+id:1 ÁõĞşµÂ
+id:2 ÕÅÒíµÂ
+*/
+static string opearatorsFiles[][4] = {{"ÁõĞşµÂ", "Êñºº", "ÄĞ", "ºº×å"},\
+									   "ÕÅÒíµÂ", "Êñºº", "ÄĞ", "ºº×å"};
 
 /*
-*	åŸºç¡€åŠŸèƒ½ç»„ 
-*	åŒ…æ‹¬ï¼šå…‰æ ‡ç§»åŠ¨gotoxy æ£€æµ‹é¼ æ ‡æŒ‰ä¸‹èŒƒå›´checkMouseState
-*	author: é—°åœŸ 
-*/
+ÕûĞÍÊı×é¾ØÕónowInformation Êı¾İËµÃ÷
+======================================
+0: Êó±êËùÔÚµãÀàĞÍ
+1.µØÍ¼  2.´ı²¿ÊğÇø 
 
-// å…‰æ ‡ç§»åŠ¨
-void gotoxy(int x, int y) {
+1: Êó±êËùÔÚµã×´Ì¬
+1-> 1.¿É²¿ÊğµØÃæ  2.²»¿É²¿ÊğµØÃæ  3.¿É²¿ÊğÉ½µØ  4.²»¿É²¿ÊğÉ½µØ  5.µĞ¾ü¹¥Èëµã  6.±£»¤±¾Óªµã  7.É½µØ
+2-> %½«ÁìÎ¨Ò»Âë%
+*/
+static int nowInformation[] = {1, 1};
+
+/*
+*	»ù´¡¹¦ÄÜ×é
+*	°üÀ¨£º¹â±êÒÆ¶¯gotoxy ¼ì²âÊó±ê°´ÏÂ·¶Î§checkMouseState Êı×é×ªvectorarrayToVec
+*	author: ÈòÍÁ
+*/
+// ¹â±êÒÆ¶¯
+void gotoxy(short int x, short int y) {
 	COORD pos = {x, y};
 	SetConsoleCursorPosition(outputHandle, pos);
 }
-
-// æ£€æµ‹é¼ æ ‡æŒ‰ä¸‹èŒƒå›´
+// ¼ì²âÊó±ê°´ÏÂ·¶Î§
 int checkMouseState(int x, int xRound, int y, int yRound) {
 	int pointX, pointY;
-	CONSOLE_FONT_INFO fontInfo; 
 	GetCursorPos(&pForMouse);
 	ScreenToClient(GetForegroundWindow(), &pForMouse);
 	GetCurrentConsoleFont(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &fontInfo);
 	pointX = pForMouse.x / fontInfo.dwFontSize.X;
 	pointY = pForMouse.y / fontInfo.dwFontSize.Y;
-	if(((pointX <= x + xRound) and (pointX >= x)) and ((pointY <= y + yRound) and (pointY >= y))){
+	if ( (pointX <= x + xRound) && (pointX >= x) && (pointY <= y + yRound) && (pointY >= y) ) {
 		return 1;
-	}
-	else{
+	} else {
 		return 0;
 	}
 }
-
-
-
+// ¼ÇµÃ£¬ÕâÊÇÄã»¨ÕûÕû°ëÌìÊ±¼ä12¸öĞ¡Ê±²é×ÊÁÏĞ´µÄ
+// Éú³É¶şÎ¬ÏòÁ¿±í£¬ÒÔ0Îª·Ö¸îÔªËØ
+vector< vector <int> > generateVecs ( initializer_list< int > List) {
+	vector < vector<int> > tempVec;
+	vector <int> inTempVec;
+	for ( auto beg = List.begin(); beg != List.end(); beg++ ) {
+		if (*beg) {
+			inTempVec.push_back(*beg);
+		}
+		else {
+			tempVec.push_back(inTempVec);
+			inTempVec.resize(0);
+		}
+	}
+	return tempVec;
+}
 /*
-*	å¤åˆåŠŸèƒ½ç»„ 
-*	ç°å·²åŠ å…¥å¤§é“ç£¨ç­å¥—é¤
-*	åŒ…æ‹¬ï¼šåˆ†å‰²çº¿ 
-*	author: é—°åœŸ 
+*	¸´ºÏ¹¦ÄÜ×é
+*	ÏÖÒÑ¼ÓÈë´óµÀÄ¥ÃğÌ×²Í
+*	°üÀ¨£º·Ö¸îÏß ´òÓ¡ ÍØÕ¹-°´Å¥½á¹¹²Ù×÷
+*	author: ÈòÍÁ
+*
+*	Base - »ù±¾¹¦ÄÜ
+*
 */
-/* 
-* Base
-*/ 
-// åˆ†å‰²çº¿ 
+// ·Ö¸îÏß´òÓ¡
 void printDevideLineWithInfo(string printTitle, int offset) {
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
-	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2 - offset; i++){
+	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2 - offset; i++) {
 		cout << "-";
 	}
 	cout << printTitle;
-	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2; i++){
+	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2; i++) {
 		cout << "-";
 	}
 	cout << endl;
 }
-/* 
-*	Extended - ç±»æŒ‰é’®ç»“æ„æ“ä½œ
-*	include: åŸºç¡€æŒ‰é’®æ•°æ®ä½“
-*/ 
-struct buttonLabel{
-	int leftX, leftY, RightX, RightY;
+// Çå³ıÆÁÄ»
+void eraseExpectFrame() {
+	GetConsoleScreenBufferInfo(outputHandle, &csbi);
+	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++) {
+		gotoxy(1, i + 1);
+		for(int j = 0; j < (csbi.srWindow.Right - 4); i++) {
+			cout << " ";
+		}
+	}
+	cout << endl;
+}
+/*
+*	Extended - °´Å¥½á¹¹²Ù×÷
+*	include: »ù´¡°´Å¥Êı¾İÌå °´Å¥³õÊ¼»¯º¯Êı
+*	         °´Å¥ÎÄ±¾¸²¸ÇÊ½Êä³ö
+*/
+struct Button {
+	int leftX[2], leftY[2], rightX[2], rightY[2];
 	bool isPressed;
+	void (*func)();
 	string label;
 };
+void buttonInit(struct Button &button, int leftXY[2], int rightXY[2], string buttonLabel, void (*func)()) {
+	button.func = func;
+	// Î»ÖÃ¸³Öµ
+	button.leftX[0] = leftXY[0];
+	button.leftX[1] = leftXY[1];
+	button.leftY[0] = leftXY[0];
+	button.leftY[1] = rightXY[1];
+	button.rightX[0] = rightXY[0];
+	button.rightX[1] = leftXY[1];
+	button.rightY[0] = rightXY[0];
+	button.rightY[0] = rightXY[1];
+	button.label = buttonLabel;
+	button.isPressed = false;
+}
+void printButtonLabel(struct Button button) {
+	gotoxy(button.leftX[0], button.leftX[1]);
+	cout << button.label;
+}
+void eraseButtonLabel(struct Button button, int offset) {
+	gotoxy(button.leftX[0], button.leftX[1]);
+	for(int i = 0; i < sizeof(button.label) / sizeof(string) + offset; i++) {
+		cout << " ";
+	}
+}
+/*
+* UI - »ù´¡½çÃæ¶¨Òå¼°Ë¢ĞÂ
+* include: coutMap
+*/
+void coutMap(vector< vector<int> > deployUI) {
+	/* 
+	 ½ÓÊÜvectorÈİÆ÷¾ØÕó 
+	 ÏŞ¶¨ÀàĞÍÎªint  
+	*/
+	int lineSize = deployUI.size();
+	gotoxy(1, 1);
+	cout << "  \b\b";
+	for(int i = 0; i < lineSize; i++) {
+		int rowSize = deployUI[i].size();
+		for(int j = 0; j < rowSize; j++) {
+			for(int k = 0; k < lineSize; k++) {
+				gotoxy(4 * j + 2, 2 * i + 1);
+				cout << "-----";
+				gotoxy(4 * j + 2, 2 * i + 2);
+				switch ( deployUI[i][j] ){
+					case 1: // ¿É²¿ÊğµØÃæ
+						cout << "| _ |";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						break;
+					case 2: // ÎŞ·¨²¿ÊğµØÃæ
+						cout << "| X |";
+						break;
+					case 3: // ¿É²¿ÊğÉ½µØ
+						cout << "|";
+						wcout << ConsoleBackgroundColor::White;
+						cout << " - ";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						cout << "|";
+						break;
+					case 4: // ²»¿É²¿ÊğÉ½µØ
+						cout << "|";
+						wcout << ConsoleBackgroundColor::White;
+						cout << " X ";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						cout << "|";
+						break;
+					case 5: // µĞ¾ü¹¥Èëµã
+						cout << "|";
+						wcout << ConsoleBackgroundColor::Red;
+						cout << " ! ";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						cout << "|";
+						break;
+					case 6: // ±£»¤±¾Óªµã
+						cout << "|";
+						wcout << ConsoleBackgroundColor::Cyan;
+						cout << " ! ";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						cout << "|";
+						break;
+					case 7: // ÉîÔ¨
+						cout << "\\";
+						wcout << ConsoleBackgroundColor::Red;
+						cout << "www";
+						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+						cout << "/";
+						break;
+				} 
+				gotoxy(4 * j + 2, 2 * i + 3);
+				cout << "-----";                               
+			}
+		}
+	}
+}
+void coutGenerals(vector< vector<int> > opearatorsFormations){
+	gotoxy(1, 25);
+	cout << "---------------------------------------------------------------------------------------";
+	gotoxy(1, 26);
+	cout << "                                                                                       ";
+	gotoxy(1, 27);
+	cout << "                                                                                       ";
+	gotoxy(1, 28);
+	cout << "                                                                                       ";
+	gotoxy(1, 25);
+	cout << "---------------------------------------------------------------------------------------";
+	for (int i = 0; i < opearatorsFormations.size(); i++) {
+		gotoxy(10 * i + 1, 26);
+		wcout << ConsoleBackgroundColor::Yellow;
+		cout << " Ex "<< opearatorsValue[ opearatorsFormations[i][0] - 1 ][11] << " ";
+		switch (opearatorsFormations[i][2]){
+			case 1:
+				cout << "Ê¿ ";
+				break;
+			case 2:
+				cout << "Î¾ ";
+				break;
+			case 3:
+				cout << "Ğ£ ";
+				break;
+			case 4:
+				cout << "½« ";
+				break;
+		}
+		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+		
+		gotoxy(10 * i + 1, 27);
+		wcout << ConsoleBackgroundColor::White;
+		cout << " " << opearatorsFiles[ opearatorsFormations[i][0] - 1 ][0] << "  ";
+		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
+		
+		gotoxy(10 * i + 1, 28);
+		cout << " ";
+		if (opearatorsFormations[i][2] < 4) {for( int j = 0; j < i + 1; j++) {cout << "I";}}
+		else {cout << "IV";}
+		wcout << ConsoleColor::WhiteIntensity;
+		cout << " LV." << opearatorsFormations[i][1];
+		wcout << ConsoleColor::None;
+		
+		for (int j = 1; j <= 3; j++){
+			gotoxy(10 * i + 10, 25 + j);
+			cout << "| ";
+			gotoxy(10 * i + 4, 25);
+			cout << "/\\";
+		}
+		
+	}
+}
+void coutInformation() {
+	gotoxy(1, 1);
+}
+void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsFormations) {
+	coutMap(mapVec);
+	
+	while (1) {
+		// ½øÈëÓÎÍæ
+		/*
+		for (int i = mapVec.begin(); i != mapVec.end(); i++) {
+			
+		}*/
+		// todo:ÏÔÊ¾ĞÅÏ¢¿ò
+		coutGenerals(opearatorsFormations);
+		Sleep(50);
+	}	
+}
+
+
+/*
+ÕûĞÍÏòÁ¿¾ØÕóopearatorsFormations Êı¾İËµÃ÷
+======================================
+0: ½«ÁìÎ¨Ò»Âë  1: ½«ÁìµÈ¼¶ 2.½«Áì¾üÏÎ (1.Ê¿  2.Î¾  3.Ğ£  4.½«)
+======================================
+*/
 
 
 
-// ä¸»å‡½æ•° 
+
+
+// Ö÷º¯Êı
 int main(int argc, char* argv[]) {
 	SetConsoleTitleA("Shattering...");
-	// è·å–çª—å£å¤§å° 90x30 
+	// »ñÈ¡´°¿Ú´óĞ¡ 90x30
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
-	// è®¾ç½®æ§åˆ¶å°æ¨¡å¼ 
+	// ÉèÖÃ¿ØÖÆÌ¨Ä£Ê½
 	DWORD consoleMode;
+	SMALL_RECT winSize = {90, 30} ;
 	GetConsoleMode(inputHandle, &consoleMode);
 	consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
 	consoleMode &= ~ENABLE_INSERT_MODE;
 	SetConsoleMode(inputHandle, consoleMode);
-	
-	// åŠ è½½åŠ¨ç”»[To do] 
-	
-	gotoxy(0, 0);
-	printDevideLineWithInfo("æ­£åœ¨åŠ è½½...", 2);
+	SetConsoleWindowInfo(outputHandle, 1, &winSize);
+	// CONSOLE_CURSOR_INFO cursor_info={0,0}; 
+	// SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&cursor_info);
+
+	// ¸üÎªÏ¸½ÚµÄ¼ÓÔØ¶¯»­ -> ½ø¶ÈÌõÊ½[To do]
+	printDevideLineWithInfo("ÕıÔÚ¼ÓÔØ...", 2);
 	gotoxy(0, 1);
-	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++){
+	for(int i = 0; i < (csbi.srWindow.Bottom - 1); i++) {
 		cout << "| ";
-		for (int j = 0; j < (csbi.srWindow.Right - 4); j++){
-			cout << " ";	
+		for (int j = 0; j < (csbi.srWindow.Right - 4); j++) {
+			cout << " ";
 		}
-		cout << " |" << endl;;
+		cout << " |" << endl;
 	}
-	
 	printDevideLineWithInfo("", 1);
-	
 	gotoxy(0, 0);
-	printDevideLineWithInfo("åŠ è½½æˆåŠŸ", 2);
+	printDevideLineWithInfo("¼ÓÔØ³É¹¦", 2);
+
+	// Íê³É¼ÓÔØ
 	SetConsoleTitleA("Shattered Light");
-	Sleep(1000);
 	gotoxy(0, 0);
-	printDevideLineWithInfo("Shattered Light - ç ´ç¢çš„å…‰èŠ’", 2);
+	printDevideLineWithInfo("Shattered Light - ÆÆËéµÄ¹âÃ¢", 2);
+	Sleep(1000);
+
+	Button aButton;
+	string tempLabel = "½øĞĞ²¿Êğ";
+	int a[] = {1, 1}, b[] = {3, 2};
+	buttonInit(aButton, a, b, tempLabel, eraseExpectFrame);
+	printButtonLabel(aButton);	
+	Sleep(1000);
 	
-	// æ¸¸æˆä¸»å¾ªç¯ 
-	while (1) {
-		if (KEY_DOWN(VK_LBUTTON)) {
-			if(checkMouseState(0, 10, 0, 10)) {
-				gotoxy(6, 5);
-				cout << "éƒ¨ç½²";
-			}
-		}
-		Sleep(90);
-	}
+	
+	vector< vector<int> > opearatorsFormations = generateVecs({1, 40, 1, 0, \
+															   2, 40, 4, 0});
+	
+	
+	play(generateVecs({ 3, 2, 1, 0, 1, 1, 4, 0, 2, 4, 2, 0, 5, 1, 1, 1, 2, 1, 6, 0, 7, 0 }), opearatorsFormations);
+	
 	return 0;
-}	
+}
