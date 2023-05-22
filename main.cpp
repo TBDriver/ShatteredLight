@@ -50,7 +50,7 @@ static HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 static HANDLE inputHandle = GetStdHandle(STD_INPUT_HANDLE);
 
 // 你这point太假了
-static POINT pForMouse;		 // usedIn: checkMouseState
+static POINT pForMouse;		 // usedIn: checkMouseStateIn
 static POINT cursourXY = {0, 0};// usedIn: GLOBAL
 
 // 字体大小全局变量建立 
@@ -100,7 +100,7 @@ static int nowInformation[] = {1, 1};
 
 /*
 *	基础功能组
-*	包括：光标移动gotoxy 检测鼠标按下范围checkMouseState 数组转vectorarrayToVec
+*	包括：光标移动gotoxy 检测鼠标按下范围checkMouseStateIn 数组转vectorarrayToVec
 *	author: 闰土
 */
 // 光标移动
@@ -109,7 +109,7 @@ void gotoxy(short int x, short int y) {
 	SetConsoleCursorPosition(outputHandle, pos);
 }
 // 检测鼠标按下范围
-int checkMouseState(int x, int xRound, int y, int yRound) {
+int checkMouseStateIn(int x, int xRound, int y, int yRound) {
 	int pointX, pointY;
 	GetCursorPos(&pForMouse);
 	ScreenToClient(GetForegroundWindow(), &pForMouse);
@@ -118,9 +118,18 @@ int checkMouseState(int x, int xRound, int y, int yRound) {
 	pointY = pForMouse.y / fontInfo.dwFontSize.Y;
 	if ( (pointX <= x + xRound) && (pointX >= x) && (pointY <= y + yRound) && (pointY >= y) ) {
 		return 1;
-	} else {
-		return 0;
 	}
+	return 0;
+}
+int checkMousePoint() {
+	int pointX, pointY;
+	GetCursorPos(&pForMouse);
+	ScreenToClient(GetForegroundWindow(), &pForMouse);
+	GetCurrentConsoleFont(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &fontInfo);
+	pointX = pForMouse.x / fontInfo.dwFontSize.X;
+	pointY = pForMouse.y / fontInfo.dwFontSize.Y;
+	int pointXY[] = {pointX, pointY};
+	return *pointXY;
 }
 // 记得，这是你花整整半天时间12个小时查资料写的
 // 生成二维向量表，以0为分割元素
@@ -318,7 +327,7 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 		cout << " LV." << opearatorsFormations[i][1];
 		wcout << ConsoleColor::None;
 		
-		for (int j = 1; j <= 3; j++){
+		for (int j = 1; j <= 3; j++){ 
 			gotoxy(10 * i + 10, 25 + j);
 			cout << "| ";
 			gotoxy(10 * i + 4, 25);
@@ -327,12 +336,78 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 		
 	}
 }
-void coutInformation() {
-	gotoxy(1, 1);
+void checkInformation(vector < vector<int> > mapVec, vector < vector <int> > opearatorsFormations) {
+	Sleep(1000);
+	bool isInformationChanged = false;
+	while (1) {
+		for (int i = 0; i < mapVec.size(); i++) {
+			for (int j = 0; j < mapVec[i].size(); j++) {
+				if (checkMouseStateIn( j*4+3, 3, i*2+2, 3 ) ) {
+					nowInformation[0] = 1;
+					nowInformation[1] = mapVec[i][j];
+					isInformationChanged = true;
+				}
+			}
+		}
+		if (isInformationChanged) {
+			isInformationChanged = false;
+			gotoxy(70, 1);
+			switch (nowInformation[0]) {
+				case 1:
+					switch (nowInformation[1]) {
+						case 1:	
+		 					cout << "可部署地面  ";
+		 					break;
+		 				case 2:
+							cout << "不可部署地面";
+							break;
+						case 3:
+							cout << "可部署山地  ";
+							break;
+						case 4:
+							cout << "不可部署山地";
+							break;
+						case 5:
+							cout << "敌军攻入点  ";
+							break;
+						case 6:
+							cout << "保护本营点  ";
+							break;
+						case 7:
+							cout << "深渊        ";
+							break;
+						default:
+							cout << "            ";
+					}
+					break;
+				case 2:
+					break;
+			}
+			nowInformation[0] = 0;
+			nowInformation[1] = 0;
+		}
+		Sleep(50);
+	}
+	
 }
 void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsFormations) {
+	gotoxy(0, 0);
+	printDevideLineWithInfo("Command Cyperspace - 演算准备中...| ", 1);
 	coutMap(mapVec);
-	
+	Sleep(700);
+	gotoxy(0, 0);
+	printDevideLineWithInfo("Command Cyperspace - 线程装载...\\ ", 1);
+	std::thread checkInformationThread (checkInformation, mapVec, opearatorsFormations);
+	checkInformationThread.detach();	
+	Sleep(200);
+	gotoxy(0, 0);
+	printDevideLineWithInfo("Command Cyperspace - 将领模拟中...- ", 1);
+	coutGenerals(opearatorsFormations);
+	Sleep(100);
+	gotoxy(0, 0);
+	printDevideLineWithInfo("Command Cyperspace - 演算正常运行中...", 1);
+	gotoxy(75, 0);
+	cout << "\bInformation";
 	while (1) {
 		// 进入游玩
 		/*
@@ -340,7 +415,7 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 			
 		}*/
 		// todo:显示信息框
-		coutGenerals(opearatorsFormations);
+		// coutGenerals(opearatorsFormations);
 		Sleep(50);
 	}	
 }
@@ -405,7 +480,7 @@ int main(int argc, char* argv[]) {
 															   2, 40, 4, 0});
 	
 	
-	play(generateVecs({ 3, 2, 1, 0, 1, 1, 4, 0, 2, 4, 2, 0, 5, 1, 1, 1, 2, 1, 6, 0, 7, 0 }), opearatorsFormations);
+	play(generateVecs({ 3, 2, 1, 0, 1, 1, 4, 0, 2, 4, 2, 1, 1, 1, 0, 5, 1, 1, 1, 2, 1, 6, 0, 7, 0 }), opearatorsFormations);
 	
 	return 0;
 }
