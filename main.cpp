@@ -15,7 +15,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+// 多线程
 #include <thread>
+#include <mutex>
 
 // 文件操作
 #include <fstream>
@@ -42,6 +45,8 @@ using std::endl;
 */
 
 // 函数预定义
+// 生成二维向量表，以0为分割元素
+// 接受整型
 vector< vector <int> > generateVecs ( initializer_list< int > List);
 
 // Handle初始化
@@ -99,6 +104,21 @@ static string opearatorsFiles[][4] = {{"刘玄德", "蜀汉", "男", "汉族"},\
 static int nowInformation[] = {1, 1};
 
 /*
+输出队列向量组 数据说明
+======================================
+printQueStr -> 字符串类型vector,存储字符串
+printQuePos -> 整形类vector矩阵,存储位置
+
+那么为什么用队列呢
+因为咱在处理元素的时候可能会有其他元素介入
+为防止出现元素顺序紊乱就只能用队列了
+*/
+static vector< string > printQueStr;
+static vector< vector<int> > printQuePos;
+static bool isQueBusy = false;
+
+
+/*
 *	基础功能组
 *	包括：光标移动gotoxy 检测鼠标按下范围checkMouseStateIn 数组转vectorarrayToVec
 *	author: 闰土
@@ -112,10 +132,12 @@ void gotoxy(short int x, short int y) {
 int checkMouseStateIn(int x, int xRound, int y, int yRound) {
 	int pointX, pointY;
 	GetCursorPos(&pForMouse);
+	// 获取鼠标坐标
 	ScreenToClient(GetForegroundWindow(), &pForMouse);
 	GetCurrentConsoleFont(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &fontInfo);
 	pointX = pForMouse.x / fontInfo.dwFontSize.X;
 	pointY = pForMouse.y / fontInfo.dwFontSize.Y;
+	// 判断范围
 	if ( (pointX <= x + xRound) && (pointX >= x) && (pointY <= y + yRound) && (pointY >= y) ) {
 		return 1;
 	}
@@ -132,7 +154,6 @@ int checkMousePoint() {
 	return *pointXY;
 }
 // 记得，这是你花整整半天时间12个小时查资料写的
-// 生成二维向量表，以0为分割元素
 vector< vector <int> > generateVecs ( initializer_list< int > List) {
 	vector < vector<int> > tempVec;
 	vector <int> inTempVec;
@@ -216,12 +237,12 @@ void eraseButtonLabel(struct Button button, int offset) {
 }
 /*
 * UI - 基础界面定义及刷新
-* include: coutMap
+* include: coutMap coutGenerals checkInformation play
 */
 void coutMap(vector< vector<int> > deployUI) {
 	/* 
 	 接受vector容器矩阵 
-	 限定类型为int  
+	 限定类型为int 
 	*/
 	int lineSize = deployUI.size();
 	gotoxy(1, 1);
@@ -419,6 +440,29 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 		Sleep(50);
 	}	
 }
+/*
+* Extended - 输出队列PrintQueue
+* include: printQueue pushPrintTask
+*/
+void printQueue(short int refreshTime) {
+	while (1) {
+		if ( !printQuePos.size() ) {
+			// 处理元素
+			gotoxy(printQuePos[0][0], printQuePos[0][1]);
+			cout << printQueStr[0];
+			printQuePos.erase[0];
+		}
+		Sleep(refreshTime);
+	}
+}
+void pushPrintTask(short int px, short int py, string pStr) {
+	while (!isQueBusy){
+		isQueBusy = true;
+		printQuePos.push_back(generateVecs(px, py));
+		printQueStr.push_back(pStr);
+		isQueBusy = false;
+	}
+}
 
 
 /*
@@ -427,8 +471,6 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 0: 将领唯一码  1: 将领等级 2.将领军衔 (1.士  2.尉  3.校  4.将)
 ======================================
 */
-
-
 
 
 
@@ -475,10 +517,8 @@ int main(int argc, char* argv[]) {
 	printButtonLabel(aButton);	
 	Sleep(1000);
 	
-	
 	vector< vector<int> > opearatorsFormations = generateVecs({1, 40, 1, 0, \
 															   2, 40, 4, 0});
-	
 	
 	play(generateVecs({ 3, 2, 1, 0, 1, 1, 4, 0, 2, 4, 2, 1, 1, 1, 0, 5, 1, 1, 1, 2, 1, 6, 0, 7, 0 }), opearatorsFormations);
 	
