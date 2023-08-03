@@ -15,8 +15,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stdio.h>
 
-// 多线程
+// 并发编程
 #include <thread>
 #include <mutex>
 
@@ -33,7 +34,7 @@
 
 // 按键按下函数预定义
 #define KEY_DOWN(VK_NONAME) ((GetAsyncKeyState(VK_NONAME) & 0x8000) ? 1: 0)
-// 吐槽一句 大写就别惦记你内驼峰了 
+// 吐槽一下 大写就别惦记你内驼峰了 
 
 // 命名空间
 using namespace std;
@@ -45,9 +46,10 @@ using std::endl;
 */
 
 // 函数预定义
-// 生成二维向量表，以0为分割元素
+// 生成二维向量组，以0为分割元素?
 // 接受整型
 vector< vector <int> > generateVecs ( initializer_list< int > List);
+void pushPrintTask(string pStr, int priority);
 
 // Handle初始化
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -60,6 +62,9 @@ static POINT cursourXY = {0, 0};// usedIn: GLOBAL
 
 // 字体大小全局变量建立 
 static CONSOLE_FONT_INFO fontInfo;
+
+// mutex锁
+mutex mutexPushLock;
 // %HOMEPATH%
 
 // 将领信息
@@ -88,8 +93,8 @@ static vector< vector<int> > opearatorsValue = generateVecs({1, 1274, 276, 168, 
 id:1 刘玄德
 id:2 张翼德
 */
-static string opearatorsFiles[][4] = {{"刘玄德", "蜀汉", "男", "汉族"},\
-									   "张翼德", "蜀汉", "男", "汉族"};
+static string opearatorsFiles[][4] = {{"刘玄??", "蜀??", "??", "汉族"},\
+									   "张翼??", "蜀??", "??", "汉族"};
 
 /*
 整型数组矩阵nowInformation 数据说明
@@ -107,14 +112,12 @@ static int nowInformation[] = {1, 1};
 输出队列向量组 数据说明
 ======================================
 printQueStr -> 字符串类型vector,存储字符串
-printQuePos -> 整形类vector矩阵,存储位置
 
 那么为什么用队列呢
 因为咱在处理元素的时候可能会有其他元素介入
 为防止出现元素顺序紊乱就只能用队列了
 */
-static vector< string > printQueStr;
-static vector< vector<int> > printQuePos;
+static vector< vector<string> > printQueStr;
 static bool isQueBusy = false;
 
 
@@ -181,13 +184,13 @@ vector< vector <int> > generateVecs ( initializer_list< int > List) {
 void printDevideLineWithInfo(string printTitle, int offset) {
 	GetConsoleScreenBufferInfo(outputHandle, &csbi);
 	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2 - offset; i++) {
-		cout << "-";
+		pushPrintTask("-", 3);
 	}
-	cout << printTitle;
+	pushPrintTask(printTitle, 3);
 	for(int i = 0; i < (csbi.srWindow.Right + 1) / 2 - printTitle.length() / 2; i++) {
-		cout << "-";
+		pushPrintTask("-", 3);
 	}
-	cout << endl;
+	pushPrintTask("\n", 3);
 }
 // 清除屏幕
 void eraseExpectFrame() {
@@ -195,10 +198,10 @@ void eraseExpectFrame() {
 	for(int i = 0; i < (csbi.srWindow.Bottom - 3); i++) {
 		gotoxy(1, i + 1);
 		for(int j = 0; j < (csbi.srWindow.Right - 4); i++) {
-			cout << " ";
+			pushPrintTask(" ", 3);
 		}
 	}
-	cout << endl;
+	pushPrintTask("\n", 3);	
 }
 /*
 *	Extended - 按钮结构操作
@@ -227,12 +230,12 @@ void buttonInit(struct Button &button, int leftXY[2], int rightXY[2], string but
 }
 void printButtonLabel(struct Button button) {
 	gotoxy(button.leftX[0], button.leftX[1]);
-	cout << button.label;
+	pushPrintTask(button.label, 2);
 }
 void eraseButtonLabel(struct Button button, int offset) {
 	gotoxy(button.leftX[0], button.leftX[1]);
 	for(int i = 0; i < sizeof(button.label) / sizeof(string) + offset; i++) {
-		cout << " ";
+		pushPrintTask(" ", 3);
 	}
 }
 /*
@@ -246,113 +249,114 @@ void coutMap(vector< vector<int> > deployUI) {
 	*/
 	int lineSize = deployUI.size();
 	gotoxy(1, 1);
-	cout << "  \b\b";
+	pushPrintTask("  \b\b", 2);
 	for(int i = 0; i < lineSize; i++) {
 		int rowSize = deployUI[i].size();
 		for(int j = 0; j < rowSize; j++) {
 			for(int k = 0; k < lineSize; k++) {
 				gotoxy(4 * j + 2, 2 * i + 1);
-				cout << "-----";
+				pushPrintTask("-----", 2);
 				gotoxy(4 * j + 2, 2 * i + 2);
 				switch ( deployUI[i][j] ){
 					case 1: // 可部署地面
-						cout << "| _ |";
+						pushPrintTask("| _ |", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
 						break;
 					case 2: // 无法部署地面
-						cout << "| X |";
+						pushPrintTask("| X |", 2);
 						break;
 					case 3: // 可部署山地
-						cout << "|";
+						pushPrintTask("|", 2);
 						wcout << ConsoleBackgroundColor::White;
-						cout << " - ";
+						pushPrintTask(" - ", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
-						cout << "|";
+						pushPrintTask("|", 2);
 						break;
 					case 4: // 不可部署山地
-						cout << "|";
+						pushPrintTask("|", 2);
 						wcout << ConsoleBackgroundColor::White;
-						cout << " X ";
+						pushPrintTask(" X ", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
-						cout << "|";
+						pushPrintTask("|", 2);
 						break;
 					case 5: // 敌军攻入点
-						cout << "|";
+						pushPrintTask("|", 2);
 						wcout << ConsoleBackgroundColor::Red;
-						cout << " ! ";
+						pushPrintTask(" ! ", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
-						cout << "|";
+						pushPrintTask("|", 2);
 						break;
 					case 6: // 保护本营点
-						cout << "|";
+						pushPrintTask("|", 2);
 						wcout << ConsoleBackgroundColor::Cyan;
-						cout << " ! ";
+						pushPrintTask(" ! ", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
-						cout << "|";
+						pushPrintTask("|", 2);
 						break;
 					case 7: // 深渊
-						cout << "\\";
+						pushPrintTask("\\", 2);
 						wcout << ConsoleBackgroundColor::Red;
-						cout << "www";
+						pushPrintTask("www", 2);
 						wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
-						cout << "/";
+						pushPrintTask("/", 2);
 						break;
 				} 
 				gotoxy(4 * j + 2, 2 * i + 3);
-				cout << "-----";                               
+				pushPrintTask("-----", 2);
 			}
 		}
 	}
 }
 void coutGenerals(vector< vector<int> > opearatorsFormations){
 	gotoxy(1, 25);
-	cout << "---------------------------------------------------------------------------------------";
+	pushPrintTask("---------------------------------------------------------------------------------------", 2);
 	gotoxy(1, 26);
-	cout << "                                                                                       ";
+	pushPrintTask("                                                                                       ", 2);
 	gotoxy(1, 27);
-	cout << "                                                                                       ";
+	pushPrintTask("                                                                                       ", 2);
 	gotoxy(1, 28);
-	cout << "                                                                                       ";
+	pushPrintTask("                                                                                       ", 2);
 	gotoxy(1, 25);
-	cout << "---------------------------------------------------------------------------------------";
+	pushPrintTask("---------------------------------------------------------------------------------------", 2);
+	// for效果:打印将领信息
 	for (int i = 0; i < opearatorsFormations.size(); i++) {
 		gotoxy(10 * i + 1, 26);
 		wcout << ConsoleBackgroundColor::Yellow;
-		cout << " Ex "<< opearatorsValue[ opearatorsFormations[i][0] - 1 ][11] << " ";
+		pushPrintTask(" Ex " + static_cast<char>(opearatorsValue[(opearatorsFormations[i][0]-1)][11]) + " ", 2);
 		switch (opearatorsFormations[i][2]){
 			case 1:
-				cout << "士 ";
+				pushPrintTask("士 ", 2);
 				break;
 			case 2:
-				cout << "尉 ";
+				pushPrintTask("尉 ", 2);
 				break;
 			case 3:
-				cout << "校 ";
+				pushPrintTask("校 ", 2);
 				break;
 			case 4:
-				cout << "将 ";
+				pushPrintTask("将 ", 2);
 				break;
 		}
 		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
 		
 		gotoxy(10 * i + 1, 27);
 		wcout << ConsoleBackgroundColor::White;
-		cout << " " << opearatorsFiles[ opearatorsFormations[i][0] - 1 ][0] << "  ";
+		pushPrintTask(" " + static_cast<char>(opearatorsFiles[ opearatorsFormations[i][0] - 1 ][0]) + "  ", 2);
 		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
 		
 		gotoxy(10 * i + 1, 28);
-		cout << " ";
-		if (opearatorsFormations[i][2] < 4) {for( int j = 0; j < i + 1; j++) {cout << "I";}}
-		else {cout << "IV";}
+		pushPrintTask(" ", 2);
+		if (opearatorsFormations[i][2] < 4) {for( int j = 0; j < i + 1; j++) {pushPrintTask("I", 2);}}
+		else {pushPrintTask("IV", 2);}
 		wcout << ConsoleColor::WhiteIntensity;
-		cout << " LV." << opearatorsFormations[i][1];
+		pushPrintTask(" LV." + static_cast<char>(opearatorsFormations[i][1], 2));
 		wcout << ConsoleColor::None;
 		
 		for (int j = 1; j <= 3; j++){ 
 			gotoxy(10 * i + 10, 25 + j);
-			cout << "| ";
+			pushPrintTask("| ", 2);
 			gotoxy(10 * i + 4, 25);
-			cout << "/\\";
+			pushPrintTask("/\\", 2);
 		}
 		
 	}
@@ -377,28 +381,28 @@ void checkInformation(vector < vector<int> > mapVec, vector < vector <int> > ope
 				case 1:
 					switch (nowInformation[1]) {
 						case 1:	
-		 					cout << "可部署地面  ";
+		 					pushPrintTask("可部署地面  ", 1);
 		 					break;
 		 				case 2:
-							cout << "不可部署地面";
+							pushPrintTask("不可部署地面", 1);
 							break;
 						case 3:
-							cout << "可部署山地  ";
+							pushPrintTask("可部署山地  ", 1);
 							break;
 						case 4:
-							cout << "不可部署山地";
+							pushPrintTask("不可部署山地", 1);
 							break;
 						case 5:
-							cout << "敌军攻入点  ";
+							pushPrintTask("敌军攻入点  ", 1);
 							break;
 						case 6:
-							cout << "保护本营点  ";
+							pushPrintTask("保护本营点  ", 1);
 							break;
 						case 7:
-							cout << "深渊        ";
+							pushPrintTask("深渊        ", 1);
 							break;
 						default:
-							cout << "            ";
+							pushPrintTask("            ");
 					}
 					break;
 				case 2:
@@ -428,7 +432,7 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 	gotoxy(0, 0);
 	printDevideLineWithInfo("Command Cyperspace - 演算正常运行中...", 1);
 	gotoxy(75, 0);
-	cout << "\bInformation";
+	pushPrintTask("\bInformation", 2);
 	while (1) {
 		// 进入游玩
 		/*
@@ -446,22 +450,32 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 */
 void printQueue(short int refreshTime) {
 	while (1) {
-		if ( !printQuePos.size() ) {
-			// 处理元素
-			gotoxy(printQuePos[0][0], printQuePos[0][1]);
-			cout << printQueStr[0];
-			printQuePos.erase[0];
+		if ( printQueStr.size() ) { // 判断队列是否为空 节省资源
+			// 输出存储的元素
+			for (int i = 0; i <= 4; i++) {
+				for(int j = 0; j <= printQueStr[i].size(); j++) {
+					printf(printQueStr[i][-1], end="");
+					printQueStr[i].pop_back();
+				}
+			}
 		}
-		Sleep(refreshTime);
+		Sleep(refreshTime); // 黄忠二技能cd
 	}
 }
-void pushPrintTask(short int px, short int py, string pStr) {
-	while (!isQueBusy){
-		isQueBusy = true;
-		printQuePos.push_back(generateVecs(px, py));
-		printQueStr.push_back(pStr);
-		isQueBusy = false;
-	}
+// √finish-> TODO: taskQue 并发编程 mutex锁资源?
+void pushPrintTask(string pStr, int priority) {
+	/*
+	* string pStr 用于添加至输出队列
+	* int    priority 打印优先级
+	* 0: 置顶 需要置于顶层的数据
+	* 1: 最重要 需要即时刷新的数据
+	* 2: 较为重要 适用于正在移动或正在在攻击的单位
+	* 3: 正常 适用于特效或边界
+	* 4: 劣重要 适用于不常刷新或无所谓的数据
+	*/
+	mutexPushLock.lock(); // 锁定防止数据紊乱
+	printQueStr[priority].push_back(pStr); // 加入队列
+	mutexPushLock.unlock();// 解锁
 }
 
 
@@ -477,8 +491,8 @@ void pushPrintTask(short int px, short int py, string pStr) {
 // 主函数
 int main(int argc, char* argv[]) {
 	SetConsoleTitleA("Shattering...");
-	// 获取窗口大小 90x30
-	GetConsoleScreenBufferInfo(outputHandle, &csbi);
+	GetConsoleScreenBufferInfo(outputHandle, &csbi); // 获取窗口大小 90x30
+
 	// 设置控制台模式
 	DWORD consoleMode;
 	SMALL_RECT winSize = {90, 30} ;
@@ -487,18 +501,16 @@ int main(int argc, char* argv[]) {
 	consoleMode &= ~ENABLE_INSERT_MODE;
 	SetConsoleMode(inputHandle, consoleMode);
 	SetConsoleWindowInfo(outputHandle, 1, &winSize);
-	// CONSOLE_CURSOR_INFO cursor_info={0,0}; 
-	// SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&cursor_info);
 
-	// 更为细节的加载动画 -> 进度条式[To do]
+	// TODO: 更为细节的加载动画 -> 进度条式
 	printDevideLineWithInfo("正在加载...", 2);
 	gotoxy(0, 1);
 	for(int i = 0; i < (csbi.srWindow.Bottom - 1); i++) {
-		cout << "| ";
+		pushPrintTask("| ", 1);
 		for (int j = 0; j < (csbi.srWindow.Right - 4); j++) {
-			cout << " ";
+			pushPrintTask(" ", 1);
 		}
-		cout << " |" << endl;
+		pushPrintTask(" |\n", 1);
 	}
 	printDevideLineWithInfo("", 1);
 	gotoxy(0, 0);
