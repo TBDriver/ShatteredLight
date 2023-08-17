@@ -46,7 +46,7 @@ using std::endl;
 */
 
 // 函数预定义
-// 生成二维向量组，以0为分割元素?
+// 生成二维向量组，以0为分割元素
 // 接受整型
 vector< vector <int> > generateVecs ( initializer_list< int > List);
 void pushPrintTask(string pStr, int priority);
@@ -93,12 +93,12 @@ static vector< vector<int> > opearatorsValue = generateVecs({1, 1274, 276, 168, 
 id:1 刘玄德
 id:2 张翼德
 */
-static string opearatorsFiles[][4] = {{"刘玄??", "蜀??", "??", "汉族"},\
-									   "张翼??", "蜀??", "??", "汉族"};
+static string opearatorsFiles[][4] = {{"刘玄德", "蜀", "男", "汉族"},\
+									   "张翼德", "蜀", "男", "汉族"};
 
 /*
-整型数组矩阵nowInformation 数据说明
-======================================
+## 整型数组矩阵nowInformation 数据说明
+## ======================================
 0: 鼠标所在点类型
 1.地图  2.待部署区 
 
@@ -322,7 +322,7 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 	for (int i = 0; i < opearatorsFormations.size(); i++) {
 		gotoxy(10 * i + 1, 26);
 		wcout << ConsoleBackgroundColor::Yellow;
-		pushPrintTask(" Ex " + static_cast<char>(opearatorsValue[(opearatorsFormations[i][0]-1)][11]) + " ", 2);
+		pushPrintTask(" Ex " + to_string(opearatorsValue[(opearatorsFormations[i][0]-1)][11]) + " ", 2);
 		switch (opearatorsFormations[i][2]){
 			case 1:
 				pushPrintTask("士 ", 2);
@@ -341,7 +341,7 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 		
 		gotoxy(10 * i + 1, 27);
 		wcout << ConsoleBackgroundColor::White;
-		pushPrintTask(" " + static_cast<char>(opearatorsFiles[ opearatorsFormations[i][0] - 1 ][0]) + "  ", 2);
+		pushPrintTask(" " += (char)opearatorsFiles[opearatorsFormations[i][0]-1][0] + "  ", 2);
 		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
 		
 		gotoxy(10 * i + 1, 28);
@@ -349,7 +349,7 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 		if (opearatorsFormations[i][2] < 4) {for( int j = 0; j < i + 1; j++) {pushPrintTask("I", 2);}}
 		else {pushPrintTask("IV", 2);}
 		wcout << ConsoleColor::WhiteIntensity;
-		pushPrintTask(" LV." + static_cast<char>(opearatorsFormations[i][1], 2));
+		pushPrintTask(" LV." + (char)opearatorsFormations[i][1], 2);
 		wcout << ConsoleColor::None;
 		
 		for (int j = 1; j <= 3; j++){ 
@@ -402,7 +402,7 @@ void checkInformation(vector < vector<int> > mapVec, vector < vector <int> > ope
 							pushPrintTask("深渊        ", 1);
 							break;
 						default:
-							pushPrintTask("            ");
+							pushPrintTask("            ", 1);
 					}
 					break;
 				case 2:
@@ -454,7 +454,7 @@ void printQueue(short int refreshTime) {
 			// 输出存储的元素
 			for (int i = 0; i <= 4; i++) {
 				for(int j = 0; j <= printQueStr[i].size(); j++) {
-					printf(printQueStr[i][-1], end="");
+					printf((char[])printQueStr[i][-1]);
 					printQueStr[i].pop_back();
 				}
 			}
