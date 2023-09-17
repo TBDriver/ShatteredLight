@@ -50,6 +50,9 @@ using std::endl;
 // 接受整型
 vector< vector <int> > generateVecs ( initializer_list< int > List);
 void pushPrintTask(string pStr, int priority);
+string convertToString(string sth);
+const char convertToCharSet(string sth, short int byte);
+
 
 // Handle初始化
 static CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -94,7 +97,7 @@ id:1 刘玄德
 id:2 张翼德
 */
 static string opearatorsFiles[][4] = {{"刘玄德", "蜀", "男", "汉族"},\
-									   "张翼德", "蜀", "男", "汉族"};
+									{"张翼德", "蜀", "男", "汉族"}};
 
 /*
 ## 整型数组矩阵nowInformation 数据说明
@@ -341,7 +344,7 @@ void coutGenerals(vector< vector<int> > opearatorsFormations){
 		
 		gotoxy(10 * i + 1, 27);
 		wcout << ConsoleBackgroundColor::White;
-		pushPrintTask(" " += (char)opearatorsFiles[opearatorsFormations[i][0]-1][0] + "  ", 2);
+		pushPrintTask(" " + opearatorsFiles[opearatorsFormations[i][0]-1][0] + "  ", 2);
 		wcout << ConsoleBackgroundColor::None << ConsoleColor::None;
 		
 		gotoxy(10 * i + 1, 28);
@@ -449,14 +452,16 @@ void play(vector < vector<int> > mapVec, vector < vector <int> > opearatorsForma
 * include: printQueue pushPrintTask
 */
 void printQueue(short int refreshTime) {
+	vector<string> tempVec;
+	for (int i=0; i<5; i++) {
+		printQueStr.push_back( tempVec );
+	}
 	while (1) {
-		if ( printQueStr.size() ) { // 判断队列是否为空 节省资源
-			// 输出存储的元素
-			for (int i = 0; i <= 4; i++) {
-				for(int j = 0; j <= printQueStr[i].size(); j++) {
-					printf((char[])printQueStr[i][-1]);
-					printQueStr[i].pop_back();
-				}
+		// 输出存储的元素
+		for (int i = 0; i < 5; i++) {
+			for(int j = 0; j < printQueStr[i].size(); j++) {
+				cout << printQueStr[i][-1];
+				printQueStr[i].pop_back();
 			}
 		}
 		Sleep(refreshTime); // 黄忠二技能cd
@@ -473,11 +478,11 @@ void pushPrintTask(string pStr, int priority) {
 	* 3: 正常 适用于特效或边界
 	* 4: 劣重要 适用于不常刷新或无所谓的数据
 	*/
+	// cout << "pushPrintTask has been used once with" << pStr << endl;
 	mutexPushLock.lock(); // 锁定防止数据紊乱
 	printQueStr[priority].push_back(pStr); // 加入队列
 	mutexPushLock.unlock();// 解锁
 }
-
 
 /*
 整型向量矩阵opearatorsFormations 数据说明
@@ -490,6 +495,10 @@ void pushPrintTask(string pStr, int priority) {
 
 // 主函数
 int main(int argc, char* argv[]) {
+	// 输出流线程装载
+	std::thread printQueueThread (printQueue, 20);
+	printQueueThread.detach();
+
 	SetConsoleTitleA("Shattering...");
 	GetConsoleScreenBufferInfo(outputHandle, &csbi); // 获取窗口大小 90x30
 
